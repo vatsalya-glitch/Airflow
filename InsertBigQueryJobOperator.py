@@ -6,22 +6,14 @@ from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobO
 from airflow.utils.dates import days_ago
 import json
 
-
 # constant vars
 PROJECT_ID = os.environ.get("GCP_PROJECT")
-connect_sa = config['config']['CONNECT_SA']
-resource_sa = config['config']['RESOURCE_SA']
-location=config['config']['REGION']
+resource_sa = "service_account"
+location="us-east4"
 
-TENANT = config['config']['TENANT']
-USER = config['config']['USER']
-GCP_ENV = config['config']['GCP_ENV']
+sql_folder_path = f"sql-files"
 
-
-sql_folder_path = f"{TENANT}/sql-files"
-
-cluster_name = config['config']['CLUSTER_NAME']
-owner_name = f"vatsalya_aetna_com"
+owner_name = f"vatsalya"
 
 default_dag_args = {
     'start_date': days_ago(1),
@@ -32,7 +24,7 @@ default_dag_args = {
 
 with models.DAG(
         'BigQueryInsertJobOperator',
-        schedule_interval='00 06 23 * *',
+        schedule_interval=@monthly,
         default_args=default_dag_args,
         template_searchpath = os.path.join(os.environ.get('DAGS_FOLDER'),sql_folder_path),
         user_defined_macros= {'data_set':  'dataset','table_name': 'table'},
@@ -42,10 +34,10 @@ with models.DAG(
                     impersonation_chain = resource_sa, # SA Airflow uses to impersonate while interacting with BQ                
                     configuration = {
                         'labels' : {
-                            'owner': owner_name # has to be included as per ANBC
+                            'owner': owner_name 
                         },
                         'query' : {
-                            'query' :"{% include 'sample_vv.sql'%}", # referencing the file via templates
+                            'query' :"{% include 'BqJobInsertOperator.sql'%}", # referencing the file via templates
                             'useLegacySql' : False # uses standard SQL as dialect.                        
                         }
                     }
